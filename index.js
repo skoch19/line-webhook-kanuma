@@ -11,6 +11,8 @@ const client = new Client({
 app.get("/", (_req, res) => res.send("KANUMA webhook running"));
 
 app.post("/webhook", async (req, res) => {
+  res.status(200).end(); // ← LINEに先に200を返す（タイムアウト防止）
+
   const events = req.body.events;
 
   for (const event of events) {
@@ -18,65 +20,63 @@ app.post("/webhook", async (req, res) => {
 
     const data = event.postback.data;
 
-    // =========================
     // ① チェックイン開始
-    // =========================
     if (data === "action=checkinStart") {
-      await client.replyMessage(
-        event.replyToken,
-        {
-          type: "template",
-          altText: "チェックイン",
-          template: {
-            type: "buttons",
-            title: "チェックインのご案内",
-            text: "宿泊名簿のご記入状況を選択してください。",
-            actions: [
-              {
-                type: "uri",
-                label: "宿泊名簿を記入する",
-                uri: "https://docs.google.com/forms/d/1qQ7ijwB7mOkB6U0eDP49Ddp5OqFpwV7GyYI6QjjEPAE/edit"
-              },
-              {
-                type: "postback",
-                label: "記入済み",
-                data: "action=checkinComplete"
-              }
-            ]
+      await client.replyMessage({
+        replyToken: event.replyToken,
+        messages: [
+          {
+            type: "template",
+            altText: "チェックイン",
+            template: {
+              type: "buttons",
+              title: "チェックインのご案内",
+              text: "宿泊名簿のご記入状況を選択してください。",
+              actions: [
+                {
+                  type: "uri",
+                  label: "宿泊名簿を記入する",
+                  uri: "https://docs.google.com/forms/d/1qQ7ijwB7mOkB6U0eDP49Ddp5OqFpwV7GyYI6QjjEPAE/edit"
+                },
+                {
+                  type: "postback",
+                  label: "記入済み",
+                  data: "action=checkinComplete"
+                }
+              ]
+            }
           }
-        },
-        { notificationDisabled: true }
-      );
+        ],
+        notificationDisabled: true
+      });
     }
 
-    // =========================
     // ② 夕食時間選択
-    // =========================
     else if (data === "action=checkinComplete") {
-      await client.replyMessage(
-        event.replyToken,
-        {
-          type: "template",
-          altText: "夕食時間選択",
-          template: {
-            type: "buttons",
-            title: "夕食時間の選択",
-            text: "ご希望の時間を選択してください",
-            actions: [
-              { type: "postback", label: "17:30", data: "action=dinner&time=17:30" },
-              { type: "postback", label: "18:00", data: "action=dinner&time=18:00" },
-              { type: "postback", label: "18:30", data: "action=dinner&time=18:30" },
-              { type: "postback", label: "19:00", data: "action=dinner&time=19:00" }
-            ]
+      await client.replyMessage({
+        replyToken: event.replyToken,
+        messages: [
+          {
+            type: "template",
+            altText: "夕食時間選択",
+            template: {
+              type: "buttons",
+              title: "夕食時間の選択",
+              text: "ご希望の時間を選択してください",
+              actions: [
+                { type: "postback", label: "17:30", data: "action=dinner&time=17:30" },
+                { type: "postback", label: "18:00", data: "action=dinner&time=18:00" },
+                { type: "postback", label: "18:30", data: "action=dinner&time=18:30" },
+                { type: "postback", label: "19:00", data: "action=dinner&time=19:00" }
+              ]
+            }
           }
-        },
-        { notificationDisabled: true }
-      );
+        ],
+        notificationDisabled: true
+      });
     }
 
-    // =========================
     // ③ 部屋番号Flex表示
-    // =========================
     else if (data.startsWith("action=dinner")) {
       const params = new URLSearchParams(data.split("&").slice(1).join("&"));
       const selectedTime = params.get("time");
@@ -136,41 +136,41 @@ app.post("/webhook", async (req, res) => {
         }))
       };
 
-      await client.replyMessage(
-        event.replyToken,
-        {
-          type: "flex",
-          altText: "部屋番号を選択してください",
-          contents: flexContents
-        },
-        { notificationDisabled: true }
-      );
+      await client.replyMessage({
+        replyToken: event.replyToken,
+        messages: [
+          {
+            type: "flex",
+            altText: "部屋番号を選択してください",
+            contents: flexContents
+          }
+        ],
+        notificationDisabled: true
+      });
     }
 
-    // =========================
     // ④ 最終確定
-    // =========================
     else if (data.startsWith("action=confirm")) {
       const params = new URLSearchParams(data.split("&").slice(1).join("&"));
       const time = params.get("time");
       const room = params.get("room");
 
-      await client.replyMessage(
-        event.replyToken,
-        {
-          type: "text",
-          text:
-            `チェックインが完了しました。\n\n` +
-            `部屋番号：${room}\n` +
-            `夕食時間：${time}\n\n` +
-            `本日はごゆっくりお過ごしください。`
-        },
-        { notificationDisabled: true }
-      );
+      await client.replyMessage({
+        replyToken: event.replyToken,
+        messages: [
+          {
+            type: "text",
+            text:
+              `チェックインが完了しました。\n\n` +
+              `部屋番号：${room}\n` +
+              `夕食時間：${time}\n\n` +
+              `本日はごゆっくりお過ごしください。`
+          }
+        ],
+        notificationDisabled: true
+      });
     }
   }
-
-  res.status(200).end();
 });
 
 const PORT = process.env.PORT || 3000;
