@@ -11,7 +11,7 @@ const client = new Client({
 app.get("/", (_req, res) => res.send("KANUMA webhook running"));
 
 app.post("/webhook", async (req, res) => {
-  res.status(200).end(); // ← LINEに先に200を返す（タイムアウト防止）
+  res.status(200).end();
 
   const events = req.body.events;
 
@@ -20,30 +20,66 @@ app.post("/webhook", async (req, res) => {
 
     const data = event.postback.data;
 
-    // ① チェックイン開始
+    // =========================
+    // ① チェックイン開始 → 2択を表示
+    // =========================
     if (data === "action=checkinStart") {
       await client.replyMessage({
         replyToken: event.replyToken,
         messages: [
           {
-            type: "template",
-            altText: "チェックイン",
-            template: {
-              type: "buttons",
-              title: "チェックインのご案内",
-              text: "宿泊名簿のご記入状況を選択してください。",
-              actions: [
-                {
-                  type: "uri",
-                  label: "宿泊名簿を記入する",
-                  uri: "https://docs.google.com/forms/d/1qQ7ijwB7mOkB6U0eDP49Ddp5OqFpwV7GyYI6QjjEPAE/edit"
-                },
-                {
-                  type: "postback",
-                  label: "記入済み",
-                  data: "action=checkinComplete"
-                }
-              ]
+            type: "flex",
+            altText: "チェックインのご案内",
+            contents: {
+              type: "bubble",
+              header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#8B3A2F",
+                contents: [
+                  {
+                    type: "text",
+                    text: "チェックインのご案内",
+                    color: "#FFFFFF",
+                    weight: "bold",
+                    size: "lg",
+                    align: "center"
+                  }
+                ]
+              },
+              body: {
+                type: "box",
+                layout: "vertical",
+                spacing: "md",
+                contents: [
+                  {
+                    type: "text",
+                    text: "宿泊名簿のご記入状況を\n選択してください。",
+                    wrap: true,
+                    align: "center",
+                    size: "md"
+                  },
+                  {
+                    type: "button",
+                    style: "primary",
+                    color: "#8B3A2F",
+                    action: {
+                      type: "uri",
+                      label: "📝 チェックインフォームの入力はこちら",
+                      uri: "https://dive-hotels.com/login?redirect=/accounts/mypage&status=401"
+                    }
+                  },
+                  {
+                    type: "button",
+                    style: "secondary",
+                    action: {
+                      type: "postback",
+                      label: "✅ フォームの入力がお済みの方はこちら",
+                      data: "action=checkinComplete"
+                    }
+                  }
+                ]
+              }
             }
           }
         ],
@@ -51,44 +87,15 @@ app.post("/webhook", async (req, res) => {
       });
     }
 
-    // ② 夕食時間選択
+    // =========================
+    // ② 部屋番号選択（入力済みの場合）
+    // =========================
     else if (data === "action=checkinComplete") {
-      await client.replyMessage({
-        replyToken: event.replyToken,
-        messages: [
-          {
-            type: "template",
-            altText: "夕食時間選択",
-            template: {
-              type: "buttons",
-              title: "夕食時間の選択",
-              text: "ご希望の時間を選択してください",
-              actions: [
-                { type: "postback", label: "17:30", data: "action=dinner&time=17:30" },
-                { type: "postback", label: "18:00", data: "action=dinner&time=18:00" },
-                { type: "postback", label: "18:30", data: "action=dinner&time=18:30" },
-                { type: "postback", label: "19:00", data: "action=dinner&time=19:00" }
-              ]
-            }
-          }
-        ],
-        notificationDisabled: true
-      });
-    }
-
-    // ③ 部屋番号Flex表示
-    else if (data.startsWith("action=dinner")) {
-      const params = new URLSearchParams(data.split("&").slice(1).join("&"));
-      const selectedTime = params.get("time");
-
       const rooms = [
-        ...Array.from({ length: 16 }, (_, i) => ({
-          name: `${i + 1}`,
-          color: "#4CAF50"
-        })),
-        { name: "ログA", color: "#8B4513" },
-        { name: "ログB", color: "#8B4513" },
-        { name: "ログC", color: "#8B4513" },
+        ...Array.from({ length: 16 }, (_, i) => ({ name: `${i + 1}`, color: "#8B3A2F" })),
+        { name: "ログA", color: "#5C4033" },
+        { name: "ログB", color: "#5C4033" },
+        { name: "ログC", color: "#5C4033" },
         { name: "和室1", color: "#1E3A8A" },
         { name: "和室2", color: "#1E3A8A" },
         { name: "和室3", color: "#1E3A8A" },
@@ -96,60 +103,111 @@ app.post("/webhook", async (req, res) => {
         { name: "和室5", color: "#1E3A8A" }
       ];
 
-      const flexContents = {
-        type: "carousel",
-        contents: rooms.map(room => ({
-          type: "bubble",
-          body: {
-            type: "box",
-            layout: "vertical",
-            backgroundColor: room.color,
-            contents: [
-              {
-                type: "text",
-                text: `部屋 ${room.name}`,
-                weight: "bold",
-                size: "xl",
-                color: "#FFFFFF",
-                align: "center"
-              }
-            ],
-            paddingAll: "40px",
-            alignItems: "center",
-            justifyContent: "center"
-          },
-          footer: {
-            type: "box",
-            layout: "vertical",
-            contents: [
-              {
-                type: "button",
-                style: "primary",
-                action: {
-                  type: "postback",
-                  label: "この部屋にする",
-                  data: `action=confirm&time=${selectedTime}&room=${room.name}`
-                }
-              }
-            ]
-          }
-        }))
-      };
-
       await client.replyMessage({
         replyToken: event.replyToken,
         messages: [
           {
+            type: "text",
+            text: "お部屋番号を選択してください 👇"
+          },
+          {
             type: "flex",
             altText: "部屋番号を選択してください",
-            contents: flexContents
+            contents: {
+              type: "carousel",
+              contents: rooms.map(room => ({
+                type: "bubble",
+                size: "nano",
+                body: {
+                  type: "box",
+                  layout: "vertical",
+                  backgroundColor: room.color,
+                  paddingAll: "20px",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  contents: [
+                    {
+                      type: "text",
+                      text: room.name,
+                      weight: "bold",
+                      size: "xl",
+                      color: "#FFFFFF",
+                      align: "center"
+                    }
+                  ],
+                  action: {
+                    type: "postback",
+                    label: room.name,
+                    data: `action=selectDinner&room=${room.name}`
+                  }
+                }
+              }))
+            }
           }
         ],
         notificationDisabled: true
       });
     }
 
-    // ④ 最終確定
+    // =========================
+    // ③ 夕食時間選択
+    // =========================
+    else if (data.startsWith("action=selectDinner")) {
+      const params = new URLSearchParams(data.split("&").slice(1).join("&"));
+      const room = params.get("room");
+
+      await client.replyMessage({
+        replyToken: event.replyToken,
+        messages: [
+          {
+            type: "text",
+            text: `部屋 ${room} で承りました。\n夕食のご希望時間を選択してください 👇`
+          },
+          {
+            type: "flex",
+            altText: "夕食時間を選択してください",
+            contents: {
+              type: "bubble",
+              body: {
+                type: "box",
+                layout: "vertical",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: "夕食時間の選択",
+                    weight: "bold",
+                    size: "lg",
+                    align: "center",
+                    margin: "md"
+                  },
+                  ...[
+                    { label: "🍽️ 17:00", time: "17:00" },
+                    { label: "🍽️ 17:30", time: "17:30" },
+                    { label: "🍽️ 18:00", time: "18:00" },
+                    { label: "🍽️ 18:30", time: "18:30" }
+                  ].map(item => ({
+                    type: "button",
+                    style: "secondary",
+                    margin: "sm",
+                    action: {
+                      type: "postback",
+                      label: item.label,
+                      data: `action=confirm&room=${room}&time=${item.time}`
+                    }
+                  }))
+                ]
+              }
+            }
+          }
+        ],
+        notificationDisabled: true
+      });
+    }
+
+    // =========================
+    // ④ 最終確定メッセージ
+    // =========================
     else if (data.startsWith("action=confirm")) {
       const params = new URLSearchParams(data.split("&").slice(1).join("&"));
       const time = params.get("time");
@@ -159,12 +217,60 @@ app.post("/webhook", async (req, res) => {
         replyToken: event.replyToken,
         messages: [
           {
-            type: "text",
-            text:
-              `チェックインが完了しました。\n\n` +
-              `部屋番号：${room}\n` +
-              `夕食時間：${time}\n\n` +
-              `本日はごゆっくりお過ごしください。`
+            type: "flex",
+            altText: "チェックイン完了",
+            contents: {
+              type: "bubble",
+              header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#8B3A2F",
+                contents: [
+                  {
+                    type: "text",
+                    text: "チェックイン完了 ✅",
+                    color: "#FFFFFF",
+                    weight: "bold",
+                    size: "lg",
+                    align: "center"
+                  }
+                ]
+              },
+              body: {
+                type: "box",
+                layout: "vertical",
+                spacing: "md",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    contents: [
+                      { type: "text", text: "お部屋番号", flex: 2, color: "#888888", size: "sm" },
+                      { type: "text", text: room, flex: 3, weight: "bold", size: "sm" }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    contents: [
+                      { type: "text", text: "夕食時間", flex: 2, color: "#888888", size: "sm" },
+                      { type: "text", text: time, flex: 3, weight: "bold", size: "sm" }
+                    ]
+                  },
+                  {
+                    type: "separator"
+                  },
+                  {
+                    type: "text",
+                    text: "本日はごゆっくりお過ごしください。",
+                    wrap: true,
+                    size: "sm",
+                    align: "center",
+                    margin: "md"
+                  }
+                ]
+              }
+            }
           }
         ],
         notificationDisabled: true
