@@ -93,72 +93,7 @@ async function handleEvent(event) {
   }
 
   // ② 部屋タイプ選択
-else if (data === "action=checkinComplete") {
-    return replyMessage(replyToken, [
-      {
-        type: "flex",
-        altText: "お部屋タイプを選択してください",
-        contents: {
-          type: "bubble",
-          header: {
-            type: "box",
-            layout: "vertical",
-            backgroundColor: "#8B3A2F",
-            contents: [
-              {
-                type: "text",
-                text: "お部屋タイプの選択",
-                color: "#FFFFFF",
-                weight: "bold",
-                size: "lg",
-                align: "center"
-              }
-            ]
-          },
-          body: {
-            type: "box",
-            layout: "vertical",
-            spacing: "md",
-            contents: [
-              {
-                type: "button",
-                style: "primary",
-                color: "#8B3A2F",
-                action: {
-                  type: "postback",
-                  label: "番号部屋（1〜16）",
-                  data: "action=selectRoomType&type=numbered"
-                }
-              },
-              {
-                type: "button",
-                style: "primary",
-                color: "#5C4033",
-                action: {
-                  type: "postback",
-                  label: "ログ（A・B・C）",
-                  data: "action=selectRoomType&type=log"
-                }
-              },
-              {
-                type: "button",
-                style: "primary",
-                color: "#1E3A8A",
-                action: {
-                  type: "postback",
-                  label: "和室（1〜5）",
-                  data: "action=selectRoomType&type=washitsu"
-                }
-              }
-            ]
-          }
-        }
-      }
-    ]);
-  }
-  
- // ② 部屋タイプ選択
-else if (data === "action=checkinComplete") {
+  else if (data === "action=checkinComplete") {
     return replyMessage(replyToken, [
       {
         type: "flex",
@@ -211,7 +146,7 @@ else if (data === "action=checkinComplete") {
                 color: "#5C4033",
                 action: {
                   type: "postback",
-                  label: "ログ（A・B・C）",
+                  label: "ログハウス（A・B・C）",
                   data: "action=selectRoomType&type=log"
                 }
               },
@@ -231,12 +166,12 @@ else if (data === "action=checkinComplete") {
       }
     ]);
   }
-  
-  // ②-b 部屋番号選択
+
+  // ②-b 部屋番号カルーセル
   else if (data.startsWith("action=selectRoomType")) {
     const params = new URLSearchParams(data.split("&").slice(1).join("&"));
     const type = params.get("type");
-  
+
     const roomMap = {
       tent1: Array.from({ length: 10 }, (_, i) => ({ name: `${i + 1}`, color: "#8B3A2F" })),
       tent2: Array.from({ length: 6 }, (_, i) => ({ name: `${i + 11}`, color: "#8B3A2F" })),
@@ -253,9 +188,9 @@ else if (data === "action=checkinComplete") {
         { name: "和室5", color: "#1E3A8A" }
       ]
     };
-  
+
     const rooms = roomMap[type];
-  
+
     return replyMessage(replyToken, [
       {
         type: "text",
@@ -297,25 +232,6 @@ else if (data === "action=checkinComplete") {
       }
     ]);
   }
-//   ```
-  
-//   ---
-  
-//   ## フロー図
-//   ```
-//   チェックイン
-//     ↓
-//   2択表示
-//     ↓
-//   「入力済みの方はこちら」
-//     ↓
-//   部屋タイプ選択（番号部屋 / ログ / 和室）
-//     ↓
-//   部屋番号カルーセル（12個以内）
-//     ↓
-//   夕食時間選択
-//     ↓
-//   完了
 
   // ③ 夕食時間選択
   else if (data.startsWith("action=selectDinner")) {
