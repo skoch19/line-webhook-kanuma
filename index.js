@@ -34,7 +34,7 @@ app.post("/webhook", (req, res) => {
 
 async function handleEvent(event) {
 
-  // チェックイン完了メッセージへの返信（通知オン）
+  // チェックイン完了メッセージへの返信
   if (event.type === "message" && event.message.type === "text") {
     if (event.message.text.startsWith("チェックイン完了")) {
       return replyMessage(event.replyToken, [
@@ -84,8 +84,102 @@ async function handleEvent(event) {
   const data = event.postback.data;
   const replyToken = event.replyToken;
 
+  // アクティビティ
+  if (data === "action=activity") {
+    const activities = [
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/1_mibdzl.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1689933834"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/5_meuvr8.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1768558449"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/3_z9jx7j.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1683730803"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/4_psbhck.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1683730801"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/6_rqk7y1.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1717412351"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/2_ewb61a.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1685598963"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/7_lgho3m.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1769845877"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/8_caqhbb.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1683730802"
+      },
+      {
+        imageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772617072/9_cg1sg3.jpg",
+        uri: "https://glampicks.jp/glamping/g41972/official/?activity_option=1768551324"
+      }
+    ];
+
+    return replyMessage(replyToken, [
+      {
+        type: "flex",
+        altText: "アクティビティ一覧",
+        contents: {
+          type: "carousel",
+          contents: activities.map(activity => ({
+            type: "bubble",
+            hero: {
+              type: "image",
+              url: activity.imageUrl,
+              size: "full",
+              aspectRatio: "20:13",
+              aspectMode: "cover",
+              action: {
+                type: "uri",
+                label: "詳細を見る",
+                uri: activity.uri
+              }
+            },
+            footer: {
+              type: "box",
+              layout: "vertical",
+              contents: [
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#8B3A2F",
+                  action: {
+                    type: "uri",
+                    label: "予約する",
+                    uri: activity.uri
+                  }
+                }
+              ]
+            }
+          }))
+        }
+      }
+    ]);
+  }
+
+  // ドリンクメニュー
+  else if (data === "action=drink") {
+    return replyMessage(replyToken, [
+      {
+        type: "image",
+        originalContentUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772618336/%E3%83%88%E3%82%99%E3%83%AA%E3%83%B3%E3%82%AF%E3%83%A1%E3%83%8B%E3%83%A5%E3%83%BC_cyyrhg.jpg",
+        previewImageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772618336/%E3%83%88%E3%82%99%E3%83%AA%E3%83%B3%E3%82%AF%E3%83%A1%E3%83%8B%E3%83%A5%E3%83%BC_cyyrhg.jpg"
+      }
+    ]);
+  }
+
   // ① チェックイン開始
-  if (data === "action=checkinStart") {
+  else if (data === "action=checkinStart") {
     return replyMessage(replyToken, [
       {
         type: "flex",
