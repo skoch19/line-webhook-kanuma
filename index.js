@@ -167,8 +167,8 @@ async function handleEvent(event) {
     ]);
   }
 
-// ②-b 部屋番号カルーセル
-else if (data.startsWith("action=selectRoomType")) {
+  // ②-b 部屋番号カルーセル
+  else if (data.startsWith("action=selectRoomType")) {
     const params = new URLSearchParams(data.split("&").slice(1).join("&"));
     const type = params.get("type");
 
@@ -206,12 +206,12 @@ else if (data.startsWith("action=selectRoomType")) {
           type: "carousel",
           contents: rooms.map(room => ({
             type: "bubble",
-            size: isTent ? "micro" : "nano",
+            size: "nano",
             body: {
               type: "box",
               layout: "vertical",
               backgroundColor: room.color,
-              paddingAll: isTent ? "30px" : "20px",
+              paddingAll: "10px",
               alignItems: "center",
               justifyContent: "center",
               action: {
@@ -224,7 +224,7 @@ else if (data.startsWith("action=selectRoomType")) {
                   type: "text",
                   text: room.name,
                   weight: "bold",
-                  size: isTent ? "lg" : "xl",
+                  size: "sm",
                   color: "#FFFFFF",
                   align: "center",
                   wrap: true
@@ -245,7 +245,7 @@ else if (data.startsWith("action=selectRoomType")) {
     return replyMessage(replyToken, [
       {
         type: "text",
-        text: `部屋 ${room} で承りました。\n夕食のご希望時間を選択してください 👇`
+        text: `${room} で承りました。\n夕食のご希望時間を選択してください 👇`
       },
       {
         type: "flex",
@@ -266,7 +266,7 @@ else if (data.startsWith("action=selectRoomType")) {
                 margin: "md"
               },
               ...[
-                { label: "🍽️ 17:00", time: "17:00" },
+                { label: "🍽️ 17:00*おすすめ*", time: "17:00" },
                 { label: "🍽️ 17:30", time: "17:30" },
                 { label: "🍽️ 18:00", time: "18:00" },
                 { label: "🍽️ 18:30", time: "18:30" }
