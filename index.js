@@ -167,14 +167,14 @@ async function handleEvent(event) {
     ]);
   }
 
-  // ②-b 部屋番号カルーセル
-  else if (data.startsWith("action=selectRoomType")) {
+// ②-b 部屋番号カルーセル
+else if (data.startsWith("action=selectRoomType")) {
     const params = new URLSearchParams(data.split("&").slice(1).join("&"));
     const type = params.get("type");
 
     const roomMap = {
-      tent1: Array.from({ length: 10 }, (_, i) => ({ name: `${i + 1}`, color: "#8B3A2F" })),
-      tent2: Array.from({ length: 6 }, (_, i) => ({ name: `${i + 11}`, color: "#8B3A2F" })),
+      tent1: Array.from({ length: 10 }, (_, i) => ({ name: `テント${i + 1}`, color: "#8B3A2F" })),
+      tent2: Array.from({ length: 6 }, (_, i) => ({ name: `テント${i + 11}`, color: "#8B3A2F" })),
       log: [
         { name: "ログA", color: "#5C4033" },
         { name: "ログB", color: "#5C4033" },
@@ -190,11 +190,14 @@ async function handleEvent(event) {
     };
 
     const rooms = roomMap[type];
+    const isTent = type === "tent1" || type === "tent2";
 
     return replyMessage(replyToken, [
       {
         type: "text",
-        text: "お部屋番号を選択してください 👇"
+        text: isTent
+          ? "スクロール・タップしてください 👉"
+          : "お部屋番号を選択してください 👇"
       },
       {
         type: "flex",
@@ -203,12 +206,12 @@ async function handleEvent(event) {
           type: "carousel",
           contents: rooms.map(room => ({
             type: "bubble",
-            size: "nano",
+            size: isTent ? "micro" : "nano",
             body: {
               type: "box",
               layout: "vertical",
               backgroundColor: room.color,
-              paddingAll: "20px",
+              paddingAll: isTent ? "30px" : "20px",
               alignItems: "center",
               justifyContent: "center",
               action: {
@@ -221,9 +224,10 @@ async function handleEvent(event) {
                   type: "text",
                   text: room.name,
                   weight: "bold",
-                  size: "xl",
+                  size: isTent ? "lg" : "xl",
                   color: "#FFFFFF",
-                  align: "center"
+                  align: "center",
+                  wrap: true
                 }
               ]
             }
