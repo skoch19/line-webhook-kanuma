@@ -24,6 +24,28 @@ async function replyMessage(replyToken, messages) {
   }
 }
 
+async function pushToStaff(messages) {
+  const ids = (process.env.STAFF_USER_IDS || "").split(",").map(id => id.trim()).filter(Boolean);
+  for (const userId of ids) {
+    const res = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${TOKEN}`
+      },
+      body: JSON.stringify({
+        to: userId,
+        messages: messages,
+        notificationDisabled: true
+      })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`STAFF PUSH error (${userId}):`, res.status, err);
+    }
+  }
+}
+
 app.get("/", (_req, res) => res.send("KANUMA webhook running"));
 
 app.post("/webhook", (req, res) => {
@@ -33,6 +55,18 @@ app.post("/webhook", (req, res) => {
 });
 
 async function handleEvent(event) {
+
+  // 友達追加イベント
+  if (event.type === "follow") {
+    await pushToStaff([
+      {
+        type: "text",
+        text: "👤 新しい友達追加がありました"
+      }
+    ]);
+    return;
+  }
+
   if (event.type !== "postback") return;
 
   const data = event.postback.data;
@@ -192,6 +226,66 @@ async function handleEvent(event) {
     const rooms = roomMap[type];
     const isTent = type === "tent1" || type === "tent2";
 
+    let carouselContents;
+
+    if (isTent) {
+      const grouped = [];
+      for (let i = 0; i < rooms.length; i += 2) {
+        grouped.push(rooms.slice(i, i + 2));
+      }
+      carouselContents = grouped.map(group => ({
+        type: "bubble",
+        size: "nano",
+        body: {
+          type: "box",
+          layout: "vertical",
+          backgroundColor: group[0].color,
+          paddingAll: "8px",
+          spacing: "sm",
+          contents: group.map(room => ({
+            type: "button",
+            style: "primary",
+            color: "#6B2D23",
+            height: "sm",
+            action: {
+              type: "postback",
+              label: room.name,
+              data: `action=selectDinner&room=${room.name}`
+            }
+          }))
+        }
+      }));
+    } else {
+      carouselContents = rooms.map(room => ({
+        type: "bubble",
+        size: "nano",
+        body: {
+          type: "box",
+          layout: "vertical",
+          backgroundColor: room.color,
+          paddingAll: "10px",
+          alignItems: "center",
+          justifyContent: "center",
+          action: {
+            type: "postback",
+            label: room.name,
+            data: `action=selectDinner&room=${room.name}`
+          },
+          contents: [
+            {
+              type: "text",
+              text: room.name,
+              weight: "bold",
+              size: "sm",
+              color: "#FFFFFF",
+              align: "center",
+              wrap: true
+            }
+          ]
+        }
+      }));
+    }
+
     return replyMessage(replyToken, [
       {
         type: "text",
@@ -204,34 +298,7 @@ async function handleEvent(event) {
         altText: "部屋番号を選択してください",
         contents: {
           type: "carousel",
-          contents: rooms.map(room => ({
-            type: "bubble",
-            size: "nano",
-            body: {
-              type: "box",
-              layout: "vertical",
-              backgroundColor: room.color,
-              paddingAll: "10px",
-              alignItems: "center",
-              justifyContent: "center",
-              action: {
-                type: "postback",
-                label: room.name,
-                data: `action=selectDinner&room=${room.name}`
-              },
-              contents: [
-                {
-                  type: "text",
-                  text: room.name,
-                  weight: "bold",
-                  size: "sm",
-                  color: "#FFFFFF",
-                  align: "center",
-                  wrap: true
-                }
-              ]
-            }
-          }))
+          contents: carouselContents
         }
       }
     ]);
@@ -266,7 +333,7 @@ async function handleEvent(event) {
                 margin: "md"
               },
               ...[
-                { label: "🍽️ 17:00*おすすめ*", time: "17:00" },
+                { label: "🍽️ 17:00", time: "17:00" },
                 { label: "🍽️ 17:30", time: "17:30" },
                 { label: "🍽️ 18:00", time: "18:00" },
                 { label: "🍽️ 18:30", time: "18:30" }
@@ -287,13 +354,13 @@ async function handleEvent(event) {
     ]);
   }
 
-  // ④ 最終確定
+  // ④ 最終確定 + スタッフに履歴送信
   else if (data.startsWith("action=confirm")) {
     const params = new URLSearchParams(data.split("&").slice(1).join("&"));
     const time = params.get("time");
     const room = params.get("room");
 
-    return replyMessage(replyToken, [
+    await replyMessage(replyToken, [
       {
         type: "flex",
         altText: "チェックイン完了",
@@ -347,6 +414,13 @@ async function handleEvent(event) {
             ]
           }
         }
+      }
+    ]);
+
+    await pushToStaff([
+      {
+        type: "text",
+        text: `📋 チェックイン完了\n\nお部屋：${room}\n夕食時間：${time}`
       }
     ]);
   }
