@@ -52,6 +52,7 @@ app.post("/webhook", (req, res) => {
 });
 
 async function handleEvent(event) {
+    console.log("EVENT:", JSON.stringify(event.source));
   if (event.type !== "postback") return;
 
   const data = event.postback.data;
