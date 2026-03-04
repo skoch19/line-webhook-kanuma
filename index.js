@@ -157,13 +157,89 @@ else if (data === "action=checkinComplete") {
     ]);
   }
   
+ // ② 部屋タイプ選択
+else if (data === "action=checkinComplete") {
+    return replyMessage(replyToken, [
+      {
+        type: "flex",
+        altText: "お部屋タイプを選択してください",
+        contents: {
+          type: "bubble",
+          header: {
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#8B3A2F",
+            contents: [
+              {
+                type: "text",
+                text: "お部屋タイプの選択",
+                color: "#FFFFFF",
+                weight: "bold",
+                size: "lg",
+                align: "center"
+              }
+            ]
+          },
+          body: {
+            type: "box",
+            layout: "vertical",
+            spacing: "md",
+            contents: [
+              {
+                type: "button",
+                style: "primary",
+                color: "#8B3A2F",
+                action: {
+                  type: "postback",
+                  label: "テント番号（1〜10）",
+                  data: "action=selectRoomType&type=tent1"
+                }
+              },
+              {
+                type: "button",
+                style: "primary",
+                color: "#8B3A2F",
+                action: {
+                  type: "postback",
+                  label: "テント番号（11〜16）",
+                  data: "action=selectRoomType&type=tent2"
+                }
+              },
+              {
+                type: "button",
+                style: "primary",
+                color: "#5C4033",
+                action: {
+                  type: "postback",
+                  label: "ログ（A・B・C）",
+                  data: "action=selectRoomType&type=log"
+                }
+              },
+              {
+                type: "button",
+                style: "primary",
+                color: "#1E3A8A",
+                action: {
+                  type: "postback",
+                  label: "和室（1〜5）",
+                  data: "action=selectRoomType&type=washitsu"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]);
+  }
+  
   // ②-b 部屋番号選択
   else if (data.startsWith("action=selectRoomType")) {
     const params = new URLSearchParams(data.split("&").slice(1).join("&"));
     const type = params.get("type");
   
     const roomMap = {
-      numbered: Array.from({ length: 16 }, (_, i) => ({ name: `${i + 1}`, color: "#8B3A2F" })),
+      tent1: Array.from({ length: 10 }, (_, i) => ({ name: `${i + 1}`, color: "#8B3A2F" })),
+      tent2: Array.from({ length: 6 }, (_, i) => ({ name: `${i + 11}`, color: "#8B3A2F" })),
       log: [
         { name: "ログA", color: "#5C4033" },
         { name: "ログB", color: "#5C4033" },
