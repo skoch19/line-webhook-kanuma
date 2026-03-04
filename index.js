@@ -4,6 +4,7 @@ const app = express();
 app.use(express.json());
 
 const TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+const STAFF_GROUP_ID = process.env.STAFF_GROUP_ID;
 
 async function replyMessage(replyToken, messages) {
   const res = await fetch("https://api.line.me/v2/bot/message/reply", {
@@ -24,22 +25,29 @@ async function replyMessage(replyToken, messages) {
   }
 }
 
-async function replyMessageWithNotification(replyToken, messages) {
-  const res = await fetch("https://api.line.me/v2/bot/message/reply", {
+async function notifyStaff(messages) {
+  if (!STAFF_GROUP_ID) {
+    console.error("STAFF_GROUP_ID is not set");
+    return;
+  }
+  console.log("Sending to group:", STAFF_GROUP_ID);
+  const res = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${TOKEN}`
     },
     body: JSON.stringify({
-      replyToken: replyToken,
+      to: STAFF_GROUP_ID,
       messages: messages,
       notificationDisabled: false
     })
   });
   if (!res.ok) {
     const err = await res.text();
-    console.error("LINE API error:", res.status, err);
+    console.error("STAFF NOTIFY error:", res.status, err);
+  } else {
+    console.log("STAFF NOTIFY success");
   }
 }
 
@@ -52,7 +60,9 @@ app.post("/webhook", (req, res) => {
 });
 
 async function handleEvent(event) {
-    console.log("EVENT:", JSON.stringify(event.source));
+  console.log("EVENT:", JSON.stringify(event.source));
+  console.log("EVENT TYPE:", event.type, "DATA:", event.postback?.data);
+
   if (event.type !== "postback") return;
 
   const data = event.postback.data;
@@ -346,10 +356,9 @@ async function handleEvent(event) {
                       },
                       {
                         type: "text",
-                        text: "⭐ おすすめ",
+                        text: "おすすめ",
                         color: "#FFFFFF",
-                        weight: "bold",
-                        size: "sm",
+                        size: "xxs",
                         align: "end"
                       }
                     ]
@@ -361,14 +370,32 @@ async function handleEvent(event) {
                 { label: "🍽️ 18:00", time: "18:00" },
                 { label: "🍽️ 18:30", time: "18:30" }
               ].map(item => ({
-                type: "button",
-                style: "secondary",
+                type: "box",
+                layout: "vertical",
                 margin: "sm",
+                backgroundColor: "#8B3A2F",
+                cornerRadius: "8px",
                 action: {
                   type: "postback",
                   label: item.label,
                   data: `action=confirm&room=${room}&time=${item.time}`
-                }
+                },
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    paddingAll: "13px",
+                    contents: [
+                      {
+                        type: "text",
+                        text: item.label,
+                        color: "#FFFFFF",
+                        weight: "bold",
+                        size: "md"
+                      }
+                    ]
+                  }
+                ]
               }))
             ]
           }
@@ -377,13 +404,80 @@ async function handleEvent(event) {
     ]);
   }
 
-  // ④ 最終確定（通知オン）
+  // ④ 確認画面
   else if (data.startsWith("action=confirm")) {
     const params = new URLSearchParams(data.split("&").slice(1).join("&"));
     const time = params.get("time");
     const room = params.get("room");
 
-    return replyMessageWithNotification(replyToken, [
+    return replyMessage(replyToken, [
+      {
+        type: "flex",
+        altText: "内容をご確認ください",
+        contents: {
+          type: "bubble",
+          header: {
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#8B3A2F",
+            contents: [
+              {
+                type: "text",
+                text: "内容のご確認",
+                color: "#FFFFFF",
+                weight: "bold",
+                size: "lg",
+                align: "center"
+              }
+            ]
+          },
+          body: {
+            type: "box",
+            layout: "vertical",
+            spacing: "md",
+            contents: [
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  { type: "text", text: "お部屋番号", flex: 2, color: "#888888", size: "sm" },
+                  { type: "text", text: room, flex: 3, weight: "bold", size: "sm" }
+                ]
+              },
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  { type: "text", text: "夕食時間", flex: 2, color: "#888888", size: "sm" },
+                  { type: "text", text: time, flex: 3, weight: "bold", size: "sm" }
+                ]
+              },
+              { type: "separator" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#8B3A2F",
+                margin: "md",
+                action: {
+                  type: "postback",
+                  label: "間違いなければこちらをタップ",
+                  data: `action=complete&room=${room}&time=${time}`
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]);
+  }
+
+  // ⑤ 最終完了 + スタッフに通知
+  else if (data.startsWith("action=complete")) {
+    const params = new URLSearchParams(data.split("&").slice(1).join("&"));
+    const time = params.get("time");
+    const room = params.get("room");
+
+    await replyMessage(replyToken, [
       {
         type: "flex",
         altText: "チェックイン完了",
@@ -437,6 +531,13 @@ async function handleEvent(event) {
             ]
           }
         }
+      }
+    ]);
+
+    await notifyStaff([
+      {
+        type: "text",
+        text: `🔔 チェックイン完了\n\nお部屋：${room}\n夕食時間：${time}`
       }
     ]);
   }
