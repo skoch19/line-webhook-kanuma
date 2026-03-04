@@ -4,7 +4,6 @@ const app = express();
 app.use(express.json());
 
 const TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-const STAFF_GROUP_ID = process.env.STAFF_GROUP_ID;
 
 async function replyMessage(replyToken, messages) {
   const res = await fetch("https://api.line.me/v2/bot/message/reply", {
@@ -25,32 +24,6 @@ async function replyMessage(replyToken, messages) {
   }
 }
 
-async function notifyStaff(messages) {
-  if (!STAFF_GROUP_ID) {
-    console.error("STAFF_GROUP_ID is not set");
-    return;
-  }
-  console.log("Sending to group:", STAFF_GROUP_ID);
-  const res = await fetch("https://api.line.me/v2/bot/message/push", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${TOKEN}`
-    },
-    body: JSON.stringify({
-      to: STAFF_GROUP_ID,
-      messages: messages,
-      notificationDisabled: false
-    })
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    console.error("STAFF NOTIFY error:", res.status, err);
-  } else {
-    console.log("STAFF NOTIFY success");
-  }
-}
-
 app.get("/", (_req, res) => res.send("KANUMA webhook running"));
 
 app.post("/webhook", (req, res) => {
@@ -60,8 +33,51 @@ app.post("/webhook", (req, res) => {
 });
 
 async function handleEvent(event) {
-  console.log("EVENT:", JSON.stringify(event.source));
-  console.log("EVENT TYPE:", event.type, "DATA:", event.postback?.data);
+
+  // チェックイン完了メッセージへの返信（通知オン）
+  if (event.type === "message" && event.message.type === "text") {
+    if (event.message.text.startsWith("チェックイン完了")) {
+      return replyMessage(event.replyToken, [
+        {
+          type: "flex",
+          altText: "チェックイン完了",
+          contents: {
+            type: "bubble",
+            header: {
+              type: "box",
+              layout: "vertical",
+              backgroundColor: "#8B3A2F",
+              contents: [
+                {
+                  type: "text",
+                  text: "チェックイン完了 ✅",
+                  color: "#FFFFFF",
+                  weight: "bold",
+                  size: "lg",
+                  align: "center"
+                }
+              ]
+            },
+            body: {
+              type: "box",
+              layout: "vertical",
+              spacing: "md",
+              contents: [
+                {
+                  type: "text",
+                  text: "本日はごゆっくりお過ごしください。",
+                  wrap: true,
+                  size: "sm",
+                  align: "center"
+                }
+              ]
+            }
+          }
+        }
+      ]);
+    }
+    return;
+  }
 
   if (event.type !== "postback") return;
 
@@ -459,85 +475,14 @@ async function handleEvent(event) {
                 color: "#8B3A2F",
                 margin: "md",
                 action: {
-                  type: "postback",
+                  type: "message",
                   label: "間違いなければこちらをタップ",
-                  data: `action=complete&room=${room}&time=${time}`
+                  text: `チェックイン完了\nお部屋：${room}\n夕食時間：${time}`
                 }
               }
             ]
           }
         }
-      }
-    ]);
-  }
-
-  // ⑤ 最終完了 + スタッフに通知
-  else if (data.startsWith("action=complete")) {
-    const params = new URLSearchParams(data.split("&").slice(1).join("&"));
-    const time = params.get("time");
-    const room = params.get("room");
-
-    await replyMessage(replyToken, [
-      {
-        type: "flex",
-        altText: "チェックイン完了",
-        contents: {
-          type: "bubble",
-          header: {
-            type: "box",
-            layout: "vertical",
-            backgroundColor: "#8B3A2F",
-            contents: [
-              {
-                type: "text",
-                text: "チェックイン完了 ✅",
-                color: "#FFFFFF",
-                weight: "bold",
-                size: "lg",
-                align: "center"
-              }
-            ]
-          },
-          body: {
-            type: "box",
-            layout: "vertical",
-            spacing: "md",
-            contents: [
-              {
-                type: "box",
-                layout: "horizontal",
-                contents: [
-                  { type: "text", text: "お部屋番号", flex: 2, color: "#888888", size: "sm" },
-                  { type: "text", text: room, flex: 3, weight: "bold", size: "sm" }
-                ]
-              },
-              {
-                type: "box",
-                layout: "horizontal",
-                contents: [
-                  { type: "text", text: "夕食時間", flex: 2, color: "#888888", size: "sm" },
-                  { type: "text", text: time, flex: 3, weight: "bold", size: "sm" }
-                ]
-              },
-              { type: "separator" },
-              {
-                type: "text",
-                text: "本日はごゆっくりお過ごしください。",
-                wrap: true,
-                size: "sm",
-                align: "center",
-                margin: "md"
-              }
-            ]
-          }
-        }
-      }
-    ]);
-
-    await notifyStaff([
-      {
-        type: "text",
-        text: `🔔 チェックイン完了\n\nお部屋：${room}\n夕食時間：${time}`
       }
     ]);
   }
