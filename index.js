@@ -67,19 +67,12 @@ async function handleEvent(event) {
             spacing: "md",
             contents: [
               {
-                type: "text",
-                text: "宿泊名簿のご記入状況を\n選択してください。",
-                wrap: true,
-                align: "center",
-                size: "md"
-              },
-              {
                 type: "button",
                 style: "primary",
                 color: "#8B3A2F",
                 action: {
                   type: "uri",
-                  label: "📝 チェックインフォームの入力はこちら",
+                  label: "チェックインフォームの入力",
                   uri: "https://dive-hotels.com/login?redirect=/accounts/mypage&status=401"
                 }
               },
@@ -88,7 +81,7 @@ async function handleEvent(event) {
                 style: "secondary",
                 action: {
                   type: "postback",
-                  label: "✅ フォームの入力がお済みの方はこちら",
+                  label: "入力済みの方はこちら",
                   data: "action=checkinComplete"
                 }
               }
