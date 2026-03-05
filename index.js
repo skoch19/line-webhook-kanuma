@@ -144,22 +144,6 @@ async function handleEvent(event) {
                 label: "詳細を見る",
                 uri: activity.uri
               }
-            },
-            footer: {
-              type: "box",
-              layout: "vertical",
-              contents: [
-                {
-                  type: "button",
-                  style: "primary",
-                  color: "#8B3A2F",
-                  action: {
-                    type: "uri",
-                    label: "予約する",
-                    uri: activity.uri
-                  }
-                }
-              ]
             }
           }))
         }
