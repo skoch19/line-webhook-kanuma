@@ -137,8 +137,8 @@ async function handleEvent(event) {
               type: "image",
               url: activity.imageUrl,
               size: "full",
-              aspectRatio: "20:13",
-              aspectMode: "cover",
+              aspectRatio: "1:1",
+              aspectMode: "fit",
               action: {
                 type: "uri",
                 label: "詳細を見る",
