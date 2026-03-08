@@ -151,13 +151,32 @@ async function handleEvent(event) {
     ]);
   }
 
-  // ドリンクメニュー
+ // ドリンクメニュー
   else if (data === "action=drink") {
+    const drinkImages = [
+      "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772962690/1_vt6pak.jpg",
+      "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772962690/2_zbkpxb.jpg",
+      "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772962690/3_ezfd96.jpg",
+      "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772962690/4_umwh4c.jpg"
+    ];
+
     return replyMessage(replyToken, [
       {
-        type: "image",
-        originalContentUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772618336/%E3%83%88%E3%82%99%E3%83%AA%E3%83%B3%E3%82%AF%E3%83%A1%E3%83%8B%E3%83%A5%E3%83%BC_cyyrhg.jpg",
-        previewImageUrl: "https://res.cloudinary.com/dtbvrmjru/image/upload/v1772618336/%E3%83%88%E3%82%99%E3%83%AA%E3%83%B3%E3%82%AF%E3%83%A1%E3%83%8B%E3%83%A5%E3%83%BC_cyyrhg.jpg"
+        type: "flex",
+        altText: "ドリンクメニュー",
+        contents: {
+          type: "carousel",
+          contents: drinkImages.map(imageUrl => ({
+            type: "bubble",
+            hero: {
+              type: "image",
+              url: imageUrl,
+              size: "full",
+              aspectRatio: "1:1",
+              aspectMode: "fit"
+            }
+          }))
+        }
       }
     ]);
   }
