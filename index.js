@@ -169,12 +169,12 @@ async function handleEvent(event) {
           contents: drinkImages.map(imageUrl => ({
             type: "bubble",
             hero: {
-              type: "image",
-              url: imageUrl,
-              size: "full",
-              aspectRatio: "1:1",
-              aspectMode: "fit"
-            }
+            type: "image",
+            url: imageUrl,
+            size: "full",
+            aspectRatio: "8:9",
+            aspectMode: "cover"
+          }
           }))
         }
       }
